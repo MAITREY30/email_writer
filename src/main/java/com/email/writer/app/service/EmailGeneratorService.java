@@ -1,8 +1,13 @@
-package com.email.writer.app;
+package com.email.writer.app.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.email.writer.app.dto.EmailRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
 
 import java.util.Map;
 
@@ -18,9 +23,11 @@ public class EmailGeneratorService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
-    public EmailGeneratorService(WebClient webClient) {
-        this.webClient = webClient;
+    public EmailGeneratorService(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.build();
     }
+
+
 
     public String generateEmailReply(EmailRequest emailRequest) {
         //Build Prompt
@@ -35,19 +42,38 @@ public class EmailGeneratorService {
                 }
         );
         //Do request and generate response
-        String response=webClient.post()
+      /*  String response=webClient.post()
                 .uri(geminiApiUrl+geminiApiKey)
                 .header("Content-Type","application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block(); */
+        String response = webClient.post()
+                .uri(geminiApiUrl + "?key=" + geminiApiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
-        
+
+
+
         //Extract Response and return
         return extractResponseContent(response);
     }
 
     private String extractResponseContent(String response) {
         try {
+               ObjectMapper mapper = new ObjectMapper();
+               JsonNode rootNode = mapper.readTree(response);
+               return rootNode.path("candidates")
+                       .get(0)
+                       .path("content")
+                       .path("parts")
+                       .get(0)
+                       .path("text")
+                       .asText();
 
         }
         catch (Exception e) {

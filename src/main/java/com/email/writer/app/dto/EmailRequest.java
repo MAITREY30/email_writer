@@ -1,8 +1,9 @@
-package com.email.writer.app;
+package com.email.writer.app.dto;
 
 import lombok.Data;
+
 @Data
 public class EmailRequest {
-    private String EmailContent;
+    private String emailContent; // lowercase
     private String tone;
 }
